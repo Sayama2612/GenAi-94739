@@ -30,7 +30,7 @@ def login_page():
     with st.form("login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Login")
+        submit = st.form_submit_button("Login", type="primary")
 
     if submit:
         if username == password and username != "":
@@ -67,7 +67,6 @@ def weather_page():
             try:
                 url = f"https://api.openweathermap.org/data/2.5/weather?appid={api_key}&units=metric&q={city}"
                 response = requests.get(url, timeout=5)
-                response.raise_for_status()
                 weather = response.json()
 
                 st.subheader(f"Weather in {city}")
