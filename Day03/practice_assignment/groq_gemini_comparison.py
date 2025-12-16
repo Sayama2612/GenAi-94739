@@ -1,11 +1,12 @@
 import os
 import requests
 import time
-import json
 from dotenv import load_dotenv
-#import google.generativeai as genai
+
+# Load environment variables
 load_dotenv()
-prompt = input("Enter your prompt :")
+
+prompt = input("Enter your prompt: ")
 
 # -------------------------
 # GROQ CALL
@@ -13,6 +14,7 @@ prompt = input("Enter your prompt :")
 def call_groq(prompt):
     try:
         start = time.time()
+
         response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={
@@ -21,7 +23,9 @@ def call_groq(prompt):
             },
             json={
                 "model": "llama-3.3-70b-versatile",
-                "messages": [{"role": "user", "content": prompt}]
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ]
             },
             timeout=30
         )
@@ -29,7 +33,8 @@ def call_groq(prompt):
         data = response.json()
 
         if "choices" in data:
-            return data["choices"][0]["message"]["content"], time.time() - start
+            ans = data["choices"][0]["message"]["content"]
+            return ans, time.time() - start
         else:
             return f"Groq API Error: {data}", None
 
@@ -38,31 +43,38 @@ def call_groq(prompt):
 
 
 # -------------------------
-# GEMINI CALL
+# GEMINI CALL (REST API)
 # -------------------------
 def call_gemini(prompt):
     try:
         start = time.time()
+        api_key = os.getenv("GOOGLE_API_KEY")
 
-        api_key=os.getenv("GEMINI_API_KEY")
-        
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt}
+                    ]
+                }
+            ]
+        }
 
         headers = {
             "Content-Type": "application/json"
         }
-        data = {
-            "contents": [{
-                "parts": [{
-                    "text": prompt
-                }]
-            }]
-        }
-        
 
-        response = requests.post(url, headers=headers, data=json.dumps(data))  
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        data = response.json()
 
-        return response.text, time.time() - start
+        # Handle Gemini API errors
+        if "error" in data:
+            return f"Gemini API Error: {data['error']['message']}", None
+
+        ans = data["candidates"][0]["content"]["parts"][0]["text"]
+        return ans, time.time() - start
 
     except Exception as e:
         return f"Gemini Exception: {e}", None
@@ -74,10 +86,12 @@ def call_gemini(prompt):
 groq_ans, groq_time = call_groq(prompt)
 gemini_ans, gemini_time = call_gemini(prompt)
 
-print("\nGROQ RESPONSE:")
+print("\n==============================")
+print("GROQ RESPONSE:")
 print(groq_ans)
 print("TIME:", groq_time)
 
 print("\nGEMINI RESPONSE:")
 print(gemini_ans)
 print("TIME:", gemini_time)
+print("==============================")
