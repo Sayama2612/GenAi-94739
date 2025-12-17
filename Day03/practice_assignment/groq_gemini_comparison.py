@@ -48,7 +48,7 @@ def call_groq(prompt):
 def call_gemini(prompt):
     try:
         start = time.time()
-        api_key = os.getenv("GOOGLE_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY")
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
 
