@@ -135,21 +135,27 @@ bot_icon = "bot.png"
 # Display Messages
 # --------------------------------------------------
 messages = st.session_state.chats[st.session_state.current_chat]
-
+if "last_user_index" not in st.session_state:
+    st.session_state.last_user_index = None
+# --------------------------------------------------
+# Display Messages + Edit Button
+# --------------------------------------------------
 for i, msg in enumerate(messages):
     avatar = user_icon if msg["role"] == "user" else bot_icon
     with st.chat_message(msg["role"], avatar=avatar):
         st.write(msg["content"])
 
-        # Edit only last user prompt
-        
+        # ✅ Edit ALWAYS on latest user message
         if (
             msg["role"] == "user"
-            and i == len(messages) - 2
-            and st.button("✏️ Edit Prompt", key=f"edit_{i}")
+            and i == st.session_state.last_user_index
+            and st.session_state.edit_index is None
         ):
-            st.session_state.edit_index = i
-            st.session_state.edit_text = msg["content"]
+            if st.button("✏️ Edit Prompt", key=f"edit_{i}"):
+                st.session_state.edit_index = i
+                st.session_state.edit_text = msg["content"]
+                st.rerun()
+
 
 # --------------------------------------------------
 # Edit Prompt Section
@@ -201,19 +207,26 @@ if st.session_state.edit_index is not None:
 user_input = st.chat_input("Say something... ^_^")
 
 if user_input:
+  
     messages.append({"role": "user", "content": user_input})
 
-    with st.chat_message("user", avatar=user_icon):
-        st.write(user_input)
+    # SAVE index immediately
+    st.session_state.last_user_index = len(messages) - 1
 
+  
+    st.rerun()
+
+if messages and messages[-1]["role"] == "user":
     with st.chat_message("assistant", avatar=bot_icon):
         with st.spinner("Thinking..."):
             if model == "GROQ Model":
-                reply = call_groq(user_input)
+                reply = call_groq(messages[-1]["content"])
             elif model == "Gemini Model":
-                reply = call_gemini(user_input)
+                reply = call_gemini(messages[-1]["content"])
             else:
-                reply = call_phi4_mini(user_input)
+                reply = call_phi4_mini(messages[-1]["content"])
+
             st.write(reply)
 
     messages.append({"role": "assistant", "content": reply})
+    st.rerun()
