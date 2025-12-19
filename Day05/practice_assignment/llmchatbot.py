@@ -6,17 +6,20 @@ from dotenv import load_dotenv
 # ----------------------------------
 # Load environment variables
 # ----------------------------------
+
 load_dotenv()
 
 # ----------------------------------
 # Page config
 # ----------------------------------
+
 st.set_page_config(page_title="Groq Chatbot", page_icon="🤖")
 st.title("🤖 Groq Chatbot (Context Limited by Turns)")
 
 # ----------------------------------
 # Initialize LLM
 # ----------------------------------
+
 llm = init_chat_model(
     model="llama-3.3-70b-versatile",
     model_provider="openai",
@@ -27,6 +30,7 @@ llm = init_chat_model(
 # ----------------------------------
 # Sidebar: Context control
 # ----------------------------------
+
 st.sidebar.header("⚙️ Settings")
 
 context_turns = st.sidebar.slider(
@@ -44,6 +48,7 @@ st.sidebar.caption(
 # ----------------------------------
 # Session State
 # ----------------------------------
+
 if "conversation" not in st.session_state:
     st.session_state.conversation = [
         {"role": "system", "content": "You are a helpful assistant."}
@@ -52,6 +57,7 @@ if "conversation" not in st.session_state:
 # ----------------------------------
 # Display Chat History
 # ----------------------------------
+
 for msg in st.session_state.conversation:
     if msg["role"] == "system":
         continue
@@ -62,6 +68,7 @@ for msg in st.session_state.conversation:
 # ----------------------------------
 # Chat Input (ONLY ONE)
 # ----------------------------------
+
 user_input = st.chat_input(
     "Say something...",
     key="chat_input"
@@ -70,6 +77,7 @@ user_input = st.chat_input(
 # ----------------------------------
 # Handle User Input
 # ----------------------------------
+
 if user_input:
     # Save user message
     st.session_state.conversation.append(
@@ -82,6 +90,7 @@ if user_input:
     # ----------------------------------
     # CONTEXT LIMITING LOGIC (TURN-BASED)
     # ----------------------------------
+    
     system_msg = st.session_state.conversation[0]
 
     # Each turn = user + assistant = 2 messages
@@ -94,6 +103,7 @@ if user_input:
     # ----------------------------------
     # Call LLM
     # ----------------------------------
+    
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             llm_output = llm.invoke(context_to_send)
@@ -107,6 +117,7 @@ if user_input:
     # ----------------------------------
     # Optional Debug (comment out later)
     # ----------------------------------
+    
     st.sidebar.write(
         "Messages sent to LLM:", len(context_to_send)
     )

@@ -1,124 +1,130 @@
 import streamlit as st
 import requests
 import os
-import json
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
-from streamlit_lottie import st_lottie
 
-# ----------------------------------
+# -------------------------------
 # Load environment variables
-# ----------------------------------
+# -------------------------------
 load_dotenv()
-
 WEATHER_API_KEY = os.getenv("OPEN_WEATHER_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# ----------------------------------
+# -------------------------------
 # Page Config
-# ----------------------------------
+# -------------------------------
 st.set_page_config(page_title="Animated Weather App", page_icon="🌦️")
-st.title("🌦️ Weather App with Animated Icons & LLM")
+st.title("🌦️ Weather App with Animation & LLM")
 
-# ----------------------------------
-# Initialize LLM (Groq)
-# ----------------------------------
+# -------------------------------
+# CSS Animations
+# -------------------------------
+st.markdown("""
+<style>
+.weather-box {
+    font-size: 100px;
+    text-align: center;
+    animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+    100% { transform: translateY(0px); }
+}
+
+.sun { color: gold; }
+.cloud { color: lightgray; }
+.rain { color: deepskyblue; }
+.snow { color: aliceblue; }
+.thunder { color: orange; }
+.fog { color: silver; }
+</style>
+""", unsafe_allow_html=True)
+
+# -------------------------------
+# LLM Init
+# -------------------------------
 llm = init_chat_model(
     model="llama-3.3-70b-versatile",
     model_provider="openai",
     base_url="https://api.groq.com/openai/v1",
-    api_key=os.getenv("GROQ_API_KEY")
+    api_key=GROQ_API_KEY
 )
 
-# ----------------------------------
-# Load Lottie from URL
-# ----------------------------------
-def load_lottie_url(url):
-    r = requests.get(url)
-    if r.status_code != 200:
-        return None
-    return r.json()
+# -------------------------------
+# Input
+# -------------------------------
+city = st.text_input("🌍 Enter city name")
 
-# ----------------------------------
-# Weather → Lottie Mapping
-# ----------------------------------
-def get_weather_animation(condition):
-    condition = condition.lower()
-
-    if "clear" in condition:
-        return load_lottie_url("https://assets2.lottiefiles.com/packages/lf20_jmBauI.json")
-    elif "cloud" in condition:
-        return load_lottie_url("https://assets2.lottiefiles.com/packages/lf20_Stdaec.json")
-    elif "rain" in condition:
-        return load_lottie_url("https://assets2.lottiefiles.com/packages/lf20_rpC1Rd.json")
-    elif "thunder" in condition:
-        return load_lottie_url("https://assets2.lottiefiles.com/packages/lf20_xRmNN8.json")
-    elif "snow" in condition:
-        return load_lottie_url("https://assets2.lottiefiles.com/packages/lf20_HflU56.json")
-    else:
-        return load_lottie_url("https://assets2.lottiefiles.com/packages/lf20_2ks3pj.json")
-
-# ----------------------------------
-# User Input
-# ----------------------------------
-city = st.text_input("🌍 Enter City Name")
-
-# ----------------------------------
-# Fetch Weather
-# ----------------------------------
+# -------------------------------
+# Button
+# -------------------------------
 if st.button("Get Weather") and city:
-    with st.spinner("Fetching weather..."):
-        url = (
-            f"https://api.openweathermap.org/data/2.5/weather"
-            f"?q={city}&appid={WEATHER_API_KEY}&units=metric"
-        )
 
-        response = requests.get(url)
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+    response = requests.get(url)
 
-        if response.status_code != 200:
-            st.error("❌ Could not fetch weather data. Check city name.")
+    if response.status_code != 200:
+        st.error("❌ Invalid city name")
+    else:
+        data = response.json()
+
+        temp = data["main"]["temp"]
+        humidity = data["main"]["humidity"]
+        wind = data["wind"]["speed"]
+        condition = data["weather"][0]["main"].lower()
+
+        # -------------------------------
+        # Animation Selection
+        # -------------------------------
+        if "clear" in condition:
+            icon, cls = "☀️", "sun"
+        elif "cloud" in condition:
+            icon, cls = "☁️", "cloud"
+        elif "rain" in condition:
+            icon, cls = "🌧️", "rain"
+        elif "snow" in condition:
+            icon, cls = "❄️", "snow"
+        elif "thunder" in condition:
+            icon, cls = "⚡", "thunder"
         else:
-            data = response.json()
+            icon, cls = "🌫️", "fog"
 
-            # Extract weather info
-            temp = data["main"]["temp"]
-            humidity = data["main"]["humidity"]
-            wind_speed = data["wind"]["speed"]
-            condition = data["weather"][0]["description"]
+        # -------------------------------
+        # Layout: LEFT animation | RIGHT data
+        # -------------------------------
+        col1, col2 = st.columns([1, 3])
 
-            animation = get_weather_animation(condition)
+        with col1:
+            st.markdown(
+                f'<div class="weather-box {cls}">{icon}</div>',
+                unsafe_allow_html=True
+            )
 
-            # ----------------------------------
-            # UI Layout
-            # ----------------------------------
-            col1, col2 = st.columns([1, 3])
+        with col2:
+            st.subheader(f"📍 {city.title()}")
+            st.write(f"🌡 **Temperature:** {temp} °C")
+            st.write(f"💧 **Humidity:** {humidity}%")
+            st.write(f"🌬 **Wind Speed:** {wind} m/s")
+            st.write(f"☁ **Condition:** {condition}")
 
-            with col1:
-                st_lottie(animation, height=180, speed=1)
+        # -------------------------------
+        # LLM Explanation
+        # -------------------------------
+        prompt = f"""
+            You are a helpful assistant.
+            Explain the following weather conditions in very simple English
+            so that even a child can understand. Use emojis and simple analogies.
 
-            with col2:
-                st.subheader(f"📍 {city.title()}")
-                st.write(f"🌡 **Temperature:** {temp} °C")
-                st.write(f"💧 **Humidity:** {humidity}%")
-                st.write(f"🌬 **Wind Speed:** {wind_speed} m/s")
-                st.write(f"☁ **Condition:** {condition}")
+            City: {city}
+            Temperature: {temp} °C
+            Humidity: {humidity}%
+            Wind Speed: {wind} m/s
+            Condition: {condition}
+        """
+        explanation = llm.invoke(prompt)
 
-            # ----------------------------------
-            # LLM Explanation
-            # ----------------------------------
-            prompt = f"""
-                You are a friendly assistant.
-
-                Explain the following weather conditions in very simple English
-                so that even a kid can understand it.
-
-                City: {city}
-                Temperature: {temp} °C
-                Humidity: {humidity}%
-                Wind Speed: {wind_speed} m/s
-                Condition: {condition}
-            """
-
-            explanation = llm.invoke(prompt)
-
-            st.subheader("🗣️ Simple Explanation")
-            st.write(explanation.content)
+        st.subheader("🗣️ Simple Weather Explanation")
+        st.write(explanation.content)

@@ -7,17 +7,20 @@ from dotenv import load_dotenv
 # --------------------------------------------------
 # Load environment variables
 # --------------------------------------------------
+
 load_dotenv()
 
 # --------------------------------------------------
 # Page config
 # --------------------------------------------------
+
 st.set_page_config(page_title="Chatbot", page_icon="🤖")
 st.title("🤖 Ruby")
 
 # --------------------------------------------------
 # Session State
 # --------------------------------------------------
+
 if "chats" not in st.session_state:
     st.session_state.chats = {"Chat 1": []}
 
@@ -36,6 +39,7 @@ if "awaiting_reply" not in st.session_state:
 # --------------------------------------------------
 # GROQ API
 # --------------------------------------------------
+
 def call_groq(prompt):
     response = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -54,6 +58,7 @@ def call_groq(prompt):
 # --------------------------------------------------
 # GEMINI API
 # --------------------------------------------------
+
 def call_gemini(prompt):
     api_key = os.getenv("GEMINI_API_KEY")
     url = (
@@ -70,6 +75,7 @@ def call_gemini(prompt):
 # --------------------------------------------------
 # PHI-4 MINI
 # --------------------------------------------------
+
 def call_phi4_mini(prompt):
     response = requests.post(
         "http://127.0.0.1:1234/v1/chat/completions",
@@ -88,6 +94,7 @@ def call_phi4_mini(prompt):
 # --------------------------------------------------
 # LLAMA LOCAL
 # --------------------------------------------------
+
 def cal_llama_model(prompt):
     response = requests.post(
         "http://127.0.0.1:1234/v1/chat/completions",
@@ -106,6 +113,7 @@ def cal_llama_model(prompt):
 # --------------------------------------------------
 # Sidebar
 # --------------------------------------------------
+
 with st.sidebar:
     st.header("Options")
     gender = st.selectbox("Select Gender", ["Male", "Female"])
@@ -127,6 +135,7 @@ with st.sidebar:
 # --------------------------------------------------
 # Avatars
 # --------------------------------------------------
+
 user_icon = "male.png" if gender == "Male" else "female.png"
 bot_icon = "bot.png"
 
@@ -135,6 +144,7 @@ messages = st.session_state.chats[st.session_state.current_chat]
 # --------------------------------------------------
 # Display Messages
 # --------------------------------------------------
+
 for i, msg in enumerate(messages):
     avatar = user_icon if msg["role"] == "user" else bot_icon
     with st.chat_message(msg["role"], avatar=avatar):
@@ -153,6 +163,7 @@ for i, msg in enumerate(messages):
 # --------------------------------------------------
 # Edit Prompt
 # --------------------------------------------------
+
 if st.session_state.edit_index is not None:
     edited = st.text_area("Modify prompt", st.session_state.edit_text)
     col1, col2 = st.columns(2)
@@ -177,6 +188,7 @@ if st.session_state.edit_index is not None:
 # --------------------------------------------------
 # Chat Input
 # --------------------------------------------------
+
 user_input = st.chat_input("Say something... ^_^")
 
 if user_input:
@@ -187,6 +199,7 @@ if user_input:
 # --------------------------------------------------
 # Assistant Reply (ONLY ONCE)
 # --------------------------------------------------
+
 if st.session_state.awaiting_reply:
     with st.chat_message("assistant", avatar=bot_icon):
         with st.spinner("Thinking..."):
